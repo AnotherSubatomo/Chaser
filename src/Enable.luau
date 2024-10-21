@@ -17,14 +17,14 @@ local Camera = workspace.CurrentCamera
 local root = script.Parent
 local internal = root.internal
 local Pathfinder = require(internal.Pathfinder)
-local MCameraman = require(internal.Cameraman)
+local __Cameraman = require(internal.Cameraman)
 local EXCEPTION = require(internal.Exception)
 
 local CameramanConfig = {
-	AgentRadius = 3 ;
+	AgentRadius = 5 ;
 	AgentHeight = 6 ;
 	AgentCanJump = true ;
-	AgentCanClimb = false ;
+	AgentCanClimb = true ;
 	Costs = {
 		Water = 20
 	};
@@ -40,24 +40,20 @@ return function ( self : { Distance : number } )
 	assert(Run:IsClient(), EXCEPTION(1))
 	
 	local Character = FetchClientChar()
-	local Cameraman = MCameraman.create()
+	local Cameraman = __Cameraman.employ()
 	local CameramanPF = Pathfinder.new(Cameraman, CameramanConfig)
 
+	-- # For easy referencing of the primary part of each rig
 	local Primary = {
 		OfUser = Character.Head ;
 		OfCamera = Cameraman.Head ;
 	}
 	
-	Cameraman.Humanoid.WalkSpeed *= 0.75
+	--Cameraman.Humanoid.WalkSpeed *= 0.75
 	
 	-- Responsible for moving the cameraman
-	local MovingConnection = Run.Stepped:Connect( function ()
-		if self.IsWalking then return end
-		if (Primary.OfUser.Position - Primary.OfCamera.Position).Magnitude < self.Distance then
-			CameramanPF:Halt()
-			return
-		end
-		CameramanPF:Compute(Character.PrimaryPart.Position)
+	local MovingConnection = Run.Heartbeat:Connect( function ()
+		CameramanPF:Compute(Primary.OfUser.Position - Camera.CFrame.LookVector.Unit * self.Distance)
 		CameramanPF:Walk()
 	end)
 
@@ -71,12 +67,27 @@ return function ( self : { Distance : number } )
 		Character = Client.Character
 		if not Character then return end
 		Primary.OfUser = Character:WaitForChild('Head')
-		Cameraman:PivotTo(CFrame.new(Character.PrimaryPart.Position + Vector3.new(4, 0, 4)))
+		Cameraman:PivotTo( CFrame.new(
+			Primary.OfUser.Position -
+			Camera.CFrame.LookVector.Unit * self.Distance
+		))
 	end)
 
-	Cameraman.Destroying:Connect( function()
+	__Cameraman.Dismissing:Connect( function()
 		MovingConnection:Disconnect()
 		RenderConnection:Disconnect()
 		CharConnection:Disconnect()
+		CameramanPF:Destroy()
+	end)
+	
+	-- # DEBUGGING
+	workspace:SetAttribute('IsDebuggingCameraman', false)
+	workspace:GetAttributeChangedSignal('IsDebuggingCameraman'):Connect( function()
+		print('detected')
+		local IsDebugging = workspace:GetAttribute('IsDebuggingCameraman')
+		Camera.CameraSubject = IsDebugging and FetchClientChar().Humanoid
+		RenderConnection = IsDebugging and RenderConnection:Disconnect() or Run.RenderStepped:Connect( function()
+			Camera.CFrame = CFrame.lookAt(Primary.OfCamera.Position, Primary.OfUser.Position)
+		end)
 	end)
 end
