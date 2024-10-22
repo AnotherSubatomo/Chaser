@@ -3,12 +3,10 @@
 	Responsible for managing the cameraman's pathfinding.
 	
 	Author:			@AnotherSubatomo (GitHub)
-	Last Committed:	19/10/2024 - 2:13 PM
+	Last Committed:	22/10/2024 - 4:08 PM
 ]=]
 
 --!native
---!strict
-
 
 local Run = game:GetService('RunService')
 local Client = game.Players.LocalPlayer
@@ -43,12 +41,11 @@ return function ()
 	
 	local Character = GetCharacter()
 	local Cameraman = __Cameraman:Employ()
-	if Cameraman == nil then return end
 	CameramanConfig.AgentHeight = Cameraman:GetExtentsSize().Y
 
 	local CameramanPF = Pathfinder.new(Cameraman, CameramanConfig)
 
-	-- # For easy referencing of the primary part of each rig
+	-- For easy referencing of the primary part of each rig
 	local Primary = {
 		OfUser = Character.Head :: BasePart ;
 		OfCamera = Cameraman.Head :: BasePart ;
@@ -62,8 +59,10 @@ return function ()
 		CameramanPF:WalkTo(Primary.OfUser.Position - Camera.CFrame.LookVector.Unit * __Cameraman.Distance)
 	end)
 
-	__Cameraman.Dismissing:Connect( function()
+	local DismissingConnection : RBXScriptConnection = nil
+	DismissingConnection = __Cameraman.Dismissing:Connect( function()
 		MovingConnection:Disconnect()
+		DismissingConnection:Disconnect()
 		CameramanPF:Destroy()
 	end)
 end

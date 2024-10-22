@@ -6,11 +6,11 @@
 	* The abstraction is called a 'Cameraman'
 	* The actual rig behind the abstraction is referenced as the 'Operator'
 
-	Last Committed:	21/10/2024 - 9:05 PM
+	Last Committed:	22/10/2024 - 4:08 PM
 ]=]
 
 --!native
---!strict
+--!nonstrict
 
 local Client = game.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -129,9 +129,10 @@ function Cameraman:Dismiss()
 	for _ , Connection : RBXScriptConnection in self.__Connections do
 		Connection:Disconnect()
 	end
-
+	
+	-- Let functions hooked to the dismissing signal finish first
 	DismissingSignal:Fire()
-	task.wait() -- # let functions hooked to the dismissing signal finish first
+	task.wait()
 
 	Camera.CameraSubject = ClientHumanoid
 	Operator.Parent = ReplicatedStorage

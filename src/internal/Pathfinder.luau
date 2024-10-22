@@ -4,11 +4,10 @@
 	the internal states of a moving character.
 	
 	Author:			@AnotherSubatomo (GitHub)
-	Last Committed:	19/10/2024 - 2:13 PM
+	Last Committed:	22/10/2024 - 4:08 PM
 ]=]
 
 --!native
---!strict
 
 local PathfindingService = game:GetService("PathfindingService")
 
@@ -34,7 +33,7 @@ export type Pathfinder = typeof(Pathfinder) & {
 	ReachedConnection : RBXScriptConnection? ;
 	-- # The minimum acceptable distance between waypoints
 	MinDistance : number ;
-	__PreviousWaypoint : PathWaypoint
+	__PreviousWaypoint : PathWaypoint?
 }
 
 local function Distance( a : Vector3 , b : Vector3 ) : number
@@ -52,6 +51,18 @@ function Pathfinder.new(
 	self.Humanoid = Character.Humanoid
 	self.MinDistance = MinDistance or 2
 	return self
+end
+
+function Pathfinder.__ReachedDisconnect( self : Pathfinder )
+	if self.ReachedConnection == nil then return end
+	self.ReachedConnection:Disconnect()
+	self.ReachedConnection = nil
+end
+
+function Pathfinder.__BlockedDisconnect( self : Pathfinder )
+	if self.BlockedConnection == nil then return end
+	self.BlockedConnection:Disconnect()
+	self.BlockedConnection = nil
 end
 
 -- [ Computes a path to the destination given ]
@@ -104,12 +115,8 @@ function Pathfinder.Walk( self : Pathfinder )
 			if Reached and self.NextWaypointIndex < #Waypoints then
 				self:FullfillWaypoint()
 			else
-				self.ReachedConnection:Disconnect()
-				self.ReachedConnection = nil
-				if self.BlockedConnection then
-					self.BlockedConnection:Disconnect()
-					self.BlockedConnection = nil
-				end
+				self:__ReachedDisconnect()
+				self:__BlockedDisconnect()
 			end
 		end)
 	end
@@ -121,12 +128,8 @@ end
 
 -- [ Halts all movement ]
 function Pathfinder.Halt( self : Pathfinder )
-	if self.ReachedConnection then
-		self.ReachedConnection:Disconnect()
-	end
-	if self.BlockedConnection then
-		self.BlockedConnection:Disconnect()
-	end
+	self:__ReachedDisconnect()
+	self:__BlockedDisconnect()
 	self.NextWaypointIndex = nil
 	self.Waypoints = nil
 end
@@ -136,14 +139,15 @@ function Pathfinder.WalkTo( self : Pathfinder , Destination : Vector3 )
 	local Success = self:Compute(Destination)
 	local Path = self.Path
 
+	--Stop execution if pathfinder is destroyed
+	if not Path then return end
+
 	if Success and Path.Status == Enum.PathStatus.Success then
-		-- Detect if path becomes blocked
 		self.BlockedConnection = Path.Blocked:Connect(function( ... : number )
 			-- Check if the obstacle is further down the path
 			if  self.NextWaypointIndex <= ... and self.NextWaypointIndex + 1 >= ... then
 				-- Stop detecting path blockage until path is re-computed
-				self.BlockedConnection:Disconnect()
-				-- Call function to re-compute new path
+				self:__BlockedDisconnect()
 				self:WalkTo(Destination)
 			end
 		end)
@@ -157,10 +161,12 @@ function Pathfinder.WalkTo( self : Pathfinder , Destination : Vector3 )
 end
 
 function Pathfinder.Destroy( self : Pathfinder )
-	task.wait()
 	self.Path:Destroy()
-	table.clear(self)
 	setmetatable(self, nil)
+	if self.ReachedConnection ~= nil then
+		self.ReachedConnection:Disconnect()
+	end
+	table.clear(self)
 end
 
 return Pathfinder

@@ -5,11 +5,10 @@
 	vision of what a second-person view would look like.
 	
 	Author:			@AnotherSubatomo (GitHub)
-	Last Committed:	19/10/2024 - 2:13 PM
+	Last Committed:	22/10/2024 - 4:08 PM
 ]=]
 
 --!native
---!strict
 
 local Chaser = {}
 

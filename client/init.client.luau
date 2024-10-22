@@ -1,18 +1,19 @@
 
 --[=[
 	An example client script for using Chaser.
-	Last Committed:	19/10/2024 - 2:13 PM
+	Last Committed:	22/10/2024 - 4:08 PM
 ]=]
 
 --!native
---!strict
+--!nonstrict
 
 local Chaser = require(game.ReplicatedStorage.Chaser)
 local Client = game.Players.LocalPlayer
 
-local function New( ClassName : string , Props : {[string] : any} )
+type Props = {[string] : any}
+local function New( ClassName : string , Props : Props? )
 	local Obj = Instance.new(ClassName)
-	for Prop : string, Value : any in (Props or {}) do
+	for Prop : string, Value : any in (Props or {}) :: Props do
 		if Prop == 'Children' then
 			for _ , Child : Instance in Value do Child.Parent = Obj end
 		continue end
@@ -103,10 +104,10 @@ Cinematic.Activated:Connect( function()
 end)
 
 Enable.Activated:Connect( function()
-	Chaser:Enable()
+	Chaser.Enable()
 end)
 
 
 Disable.Activated:Connect( function()
-	Chaser:Disable()
+	Chaser.Disable()
 end)
