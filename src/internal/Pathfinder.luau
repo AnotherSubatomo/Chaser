@@ -32,7 +32,8 @@ export type Pathfinder = typeof(Pathfinder) & {
 	NextWaypointIndex : number? ;
 	BlockedConnection : RBXScriptConnection? ;
 	ReachedConnection : RBXScriptConnection? ;
-	IsWalking : boolean ;
+	-- # The minimum acceptable distance between waypoints
+	MinDistance : number ;
 	__PreviousWaypoint : PathWaypoint
 }
 
@@ -40,12 +41,16 @@ local function Distance( a : Vector3 , b : Vector3 ) : number
 	return(a - b).Magnitude
 end
 
-function Pathfinder.new( Character : Character , PathConfig : PathConfig ) : Pathfinder
+function Pathfinder.new(
+	Character : Character ,
+	PathConfig : PathConfig ,
+	MinDistance : number?
+) : Pathfinder
 	local self = setmetatable({}, {__index = Pathfinder})
 	self.Path = PathfindingService:CreatePath(PathConfig)
 	self.Character = Character
 	self.Humanoid = Character.Humanoid
-	self.IsWalking = false
+	self.MinDistance = MinDistance or 2
 	return self
 end
 
@@ -71,7 +76,7 @@ function Pathfinder.FullfillWaypoint( self : Pathfinder )
 	local Waypoint = self.Waypoints[self.NextWaypointIndex]
 	if not Waypoint then return end
 	-- # Skip waypoints that are too close to the previous
-	if PrevWaypoint and Distance(PrevWaypoint.Position, Waypoint.Position) < 2 then
+	if PrevWaypoint and Distance(PrevWaypoint.Position, Waypoint.Position) < self.MinDistance then
 		self.NextWaypointIndex += 1
 		Waypoint = self.Waypoints[self.NextWaypointIndex]
 	end
@@ -80,6 +85,8 @@ function Pathfinder.FullfillWaypoint( self : Pathfinder )
 	end
 	Humanoid:MoveTo(Waypoint.Position)
 	self.__PreviousWaypoint = Waypoint
+	-- Increase waypoint index to move to next waypoint
+	self.NextWaypointIndex += 1
 end
 
 -- [ Makes the character walk; assuming there is a computed path ]
@@ -95,15 +102,14 @@ function Pathfinder.Walk( self : Pathfinder )
 	if not self.ReachedConnection then
 		self.ReachedConnection = Humanoid.MoveToFinished:Connect(function(Reached)
 			if Reached and self.NextWaypointIndex < #Waypoints then
-				-- Increase waypoint index and move to next waypoint
-				self.NextWaypointIndex += 1
 				self:FullfillWaypoint()
 			else
 				self.ReachedConnection:Disconnect()
+				self.ReachedConnection = nil
 				if self.BlockedConnection then
 					self.BlockedConnection:Disconnect()
+					self.BlockedConnection = nil
 				end
-				self.IsWalking = false
 			end
 		end)
 	end
@@ -111,7 +117,6 @@ function Pathfinder.Walk( self : Pathfinder )
 	-- Initially move to second waypoint (first waypoint is path start; skip it)
 	self.NextWaypointIndex = 2
 	self:FullfillWaypoint()
-	self.IsWalking = true
 end
 
 -- [ Halts all movement ]
@@ -128,14 +133,14 @@ end
 
 function Pathfinder.WalkTo( self : Pathfinder , Destination : Vector3 )
 	-- Compute the path
-	local Success, Result = self:Compute(Destination)
+	local Success = self:Compute(Destination)
 	local Path = self.Path
 
 	if Success and Path.Status == Enum.PathStatus.Success then
 		-- Detect if path becomes blocked
-		self.BlockedConnection = Path.Blocked:Connect(function(BlockedWaypointIndex)
+		self.BlockedConnection = Path.Blocked:Connect(function( ... : number )
 			-- Check if the obstacle is further down the path
-			if BlockedWaypointIndex >= self.NextWaypointIndex then
+			if  self.NextWaypointIndex <= ... and self.NextWaypointIndex + 1 >= ... then
 				-- Stop detecting path blockage until path is re-computed
 				self.BlockedConnection:Disconnect()
 				-- Call function to re-compute new path
@@ -145,7 +150,9 @@ function Pathfinder.WalkTo( self : Pathfinder , Destination : Vector3 )
 		
 		self:Walk()
 	else
-		warn("Path not computed!", Result)
+		-- # Panic mode
+		self:Jump()
+		self.Humanoid:MoveTo(Destination)
 	end
 end
 

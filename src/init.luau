@@ -12,9 +12,10 @@
 --!strict
 
 local Chaser = {}
-Chaser.Distance = 10
 
 Chaser.Enable = require(script.Enable)
-Chaser.Disable = require(script.internal.Cameraman).dismiss
+Chaser.Disable = function()
+	require(script.internal.Cameraman):Dismiss()
+end
 
 return Chaser
