@@ -1,7 +1,7 @@
 
 --[=[
 	An example client script for using Chaser.
-	Last Committed:	22/10/2024 - 4:08 PM
+	Last Committed:	22/10/2024 - 11:34 PM
 ]=]
 
 --!native
@@ -104,10 +104,10 @@ Cinematic.Activated:Connect( function()
 end)
 
 Enable.Activated:Connect( function()
-	Chaser.Enable()
+	Chaser.enable()
 end)
 
 
 Disable.Activated:Connect( function()
-	Chaser.Disable()
+	Chaser.disable()
 end)

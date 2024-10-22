@@ -4,7 +4,7 @@
 	the internal states of a moving character.
 	
 	Author:			@AnotherSubatomo (GitHub)
-	Last Committed:	22/10/2024 - 4:08 PM
+	Last Committed:	22/10/2024 - 11:34 PM
 ]=]
 
 --!native
@@ -69,7 +69,7 @@ end
 function Pathfinder.Compute( self : Pathfinder , Destination : Vector3 )
 	local Path, Character = self.Path, self.Character
 	local Success, Result = pcall( function()
-		Path:ComputeAsync(Character.PrimaryPart.Position, Destination)
+		Path:ComputeAsync(Character:GetPivot().Position, Destination)
 	end)
 	return Success, Result
 end

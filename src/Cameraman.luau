@@ -6,28 +6,28 @@
 	* The abstraction is called a 'Cameraman'
 	* The actual rig behind the abstraction is referenced as the 'Operator'
 
-	Last Committed:	22/10/2024 - 4:08 PM
+	Last Committed:	22/10/2024 - 11:34 PM
 ]=]
 
 --!native
 --!nonstrict
 
+--[[
+	TODO:
+	* Figure out how to cancel cameraman and userchar collisions
+]]
+
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Run = game:GetService('RunService')
 local Client = game.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-type Character = Model & {
+export type Character = Model & {
 	Humanoid : Humanoid ;
 	Head : BasePart ;
 }
 
-local function GetCharacter() : Character
-	repeat task.wait() until Client.Character ~= nil
-	return Client.Character
-end
-
-local CameramanUID = game:GetService('HttpService'):GenerateGUID(false)
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Run = game:GetService('RunService')
+local CameramanUID = game:GetService('HttpService'):GenerateGUID(false):sub(1, 10)
 
 local function FetchCameraman()
 	-- Return it if it already exists
@@ -35,11 +35,14 @@ local function FetchCameraman()
 	if QOperator then return QOperator end
 	
 	-- Make the cameraman
-	local Character = GetCharacter()
+	repeat task.wait()
+	until Client.Character ~= nil
+
+	local Character = Client.Character
 	Character.Archivable = true
 
 	local Operator = Character:Clone()
-	Operator.Name ..= CameramanUID
+	Operator.Name = CameramanUID.."_Cameraman"
 	Operator:AddTag(CameramanUID)
 	Character.Archivable = false
 
@@ -50,44 +53,46 @@ local function FetchCameraman()
 		if not Child:IsA('BasePart') then continue end
 		Child.Material = Enum.Material.ForceField
 		Child.Transparency = 1
-		
-		-- TO-KNOW: how the fuck is this not working?!
-		local NoCollision = Instance.new('NoCollisionConstraint')
-		NoCollision.Parent = Child
-		NoCollision.Part0 = Child
-		NoCollision.Part1 = Character:FindFirstChild(Child.Name)
-		NoCollision.Enabled = true
 	end
 	
 	return Operator
 end
 
 local Cameraman = {}
+
+-- * Changes to these properties after employment ( :Employ() )
+--	 will not reflect until the next employment after dismissal.
+Cameraman.Subject = Client
 Cameraman.Distance = 10
 Cameraman.WalkSpeedRatio = 0.75
 
 local DismissingSignal = Instance.new('BindableEvent')
 Cameraman.Dismissing = DismissingSignal.Event
 
+function Cameraman:GetSubjectChar() : Character
+	repeat task.wait()
+	until self.Subject.Character ~= nil
+	return self.Subject.Character
+end
+
 -- Relocate cameraman to player
 function Cameraman:Snap()
-	local Character = GetCharacter()
+	local Character = self:GetSubjectChar()
 	local Operator = FetchCameraman()
 
 	Operator:PivotTo( CFrame.new(
-		Character.Head.Position -
-		Character.Head.CFrame.LookVector.Unit * self.Distance
+		Character:GetPivot().Position -
+		Character:GetPivot().LookVector.Unit * self.Distance
 	))
 end
 
 function Cameraman:Employ() : Character
-	local Character = GetCharacter()
+	local Character = self:GetSubjectChar()
 	local Operator = FetchCameraman()
 	if Operator:IsDescendantOf(workspace) then return Operator end
 	
 	self:Snap()
 	Operator.Parent = workspace
-	
 	Camera.CameraSubject = Operator.Humanoid
 	
 	-- Match cameraman's walkspeed with the character's
@@ -109,11 +114,6 @@ function Cameraman:Employ() : Character
 			self:Dismiss()
 			self:Employ()
 		end);
-
-		-- When the cameraman dies
-		Operator.Humanoid.Died:Connect( function()
-			self:Dismiss()
-		end)
 	}
 
 	return Operator
@@ -123,7 +123,7 @@ function Cameraman:Dismiss()
 	local Operator = FetchCameraman()
 	if Operator:IsDescendantOf(ReplicatedStorage) then return Operator end
 
-	local Character = GetCharacter()
+	local Character = self:GetSubjectChar()
 	local ClientHumanoid = Character.Humanoid
 
 	for _ , Connection : RBXScriptConnection in self.__Connections do
