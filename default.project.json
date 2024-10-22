@@ -1,23 +1,6 @@
 {
-  "name": "Chaser",
-  "tree": {
-    "$className": "DataModel",
-
-    "ReplicatedStorage": {
-      "Chaser": {
+    "name": "Chaser",
+    "tree": {
         "$path": "src"
-      }
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Chaser@client": {
-          "$path": "client"
-        },
-        "Chaser@test": {
-          "$path": "test"
-        }
-      }
     }
-  }
 }
