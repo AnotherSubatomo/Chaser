@@ -12,7 +12,7 @@ A module that attempts to recreate [@Jam2go](https://www.youtube.com/Jam2go)'s v
 ---
 
 A video of the system in action:
-[![System Showcase](https://www.youtube.com/watch?v=8W-HuJNAInI/0.jpg)](https://www.youtube.com/watch?v=8W-HuJNAInI&t=9s)
+[![System Showcase](https://img.youtube.com/vi/8W-HuJNAInI/0.jpg)](https://www.youtube.com/watch?v=8W-HuJNAInI&t=9s)
 
 ## API
 Here are all the things you need to know to work with this module.
