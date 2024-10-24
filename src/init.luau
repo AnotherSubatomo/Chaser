@@ -78,7 +78,7 @@ end
 function Chaser.set( Config : ChaserConfig )
 	for Property : string, Value : any in Config do
 		local OldValue = Cameraman[Property]
-		assert( typeof(OldValue) ~= "Instance" or typeof(OldValue) ~= "function",
+		assert( typeof(OldValue) == "Instance" or typeof(OldValue) == "number",
 				raise("Tried to set a non-existent config property's value."))
 		Cameraman[Property] = Value
 	end
