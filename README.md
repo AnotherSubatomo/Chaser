@@ -7,12 +7,15 @@ A module that attempts to recreate [@Jam2go](https://www.youtube.com/Jam2go)'s v
 [![Build](https://img.shields.io/badge/-Build-blue.svg?color=brightgreen&style=for-the-badge)](#build "Build")
 [![License](https://img.shields.io/badge/-MIT-blue.svg?style=for-the-badge)](LICENSE "License")
 
-</div>
-
 ---
 
 A video of the system in action:
+
 [![System Showcase](https://img.youtube.com/vi/8W-HuJNAInI/0.jpg)](https://www.youtube.com/watch?v=8W-HuJNAInI&t=9s)
+
+</div>
+
+---
 
 ## API
 Here are all the things you need to know to work with this module.
